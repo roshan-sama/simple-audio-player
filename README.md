@@ -22,3 +22,5 @@ https://${fqdn}/${path}/${song}.mp3
 ## Roadmap
 
 1. Service workers to cache songs on client
+2. Time delay between songs
+3. Loading indicator to display loading state between when we press play or next and the song begins
