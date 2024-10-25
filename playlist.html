@@ -1,237 +1,283 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Audio Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex items-start justify-center p-4">
-    <div class="bg-white p-4 mt-4 sm:p-8 rounded-lg shadow-md w-full max-w-md sm:max-w-lg md:max-w-xl">
-        <h1 class="text-2xl sm:text-3xl font-bold mb-4 text-center">Audio Player</h1>
-        <div id="player" class="mb-4">
-            <div id="nowPlaying" class="text-center mb-2 font-semibold"></div>
-            <div class="flex justify-center items-center space-x-4">
-                <button id="prevBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Prev</button>
-                <button id="playPauseBtn" class="bg-green-500 text-white px-4 py-2 rounded">Play</button>
-                <button id="nextBtn" class="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
-            </div>
+  </head>
+  <body class="bg-gray-100 min-h-screen flex items-start justify-center p-4">
+    <div
+      class="bg-white p-4 mt-4 sm:p-8 rounded-lg shadow-md w-full max-w-md sm:max-w-lg md:max-w-xl"
+    >
+      <h1 class="text-2xl sm:text-3xl font-bold mb-4 text-center">
+        Audio Player
+      </h1>
+      <div id="player" class="mb-4">
+        <div id="nowPlaying" class="text-center mb-2 font-semibold"></div>
+        <div class="flex justify-center items-center space-x-4">
+          <button id="prevBtn" class="bg-blue-500 text-white px-4 py-2 rounded">
+            Prev
+          </button>
+          <button
+            id="playPauseBtn"
+            class="bg-green-500 text-white px-4 py-2 rounded"
+          >
+            Play
+          </button>
+          <button id="nextBtn" class="bg-blue-500 text-white px-4 py-2 rounded">
+            Next
+          </button>
         </div>
-        <div id="playlist" class="mt-4">
-            <h2 class="text-lg sm:text-xl font-semibold mb-2">Playlist</h2>
-            <select id="playlistSelect" class="w-full p-2 mb-2 border rounded text-sm sm:text-base">
-                <option value="">Select a playlist</option>
-            </select>
-            <ul id="songList" class="list-disc pl-5 text-sm sm:text-base max-h-96 overflow-auto"></ul>
-        </div>
-        <div class="mt-4 flex justify-center items-center space-x-2 sm:space-x-4">
-            <button id="shuffleBtn" class="bg-purple-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-sm sm:text-base">Shuffle: Off</button>
-            <button id="repeatBtn" class="bg-yellow-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-sm sm:text-base">Repeat: Off</button>
-        </div>
+      </div>
+      <div id="playlist" class="mt-4">
+        <h2 class="text-lg sm:text-xl font-semibold mb-2">Playlist</h2>
+        <select
+          id="playlistSelect"
+          class="w-full p-2 mb-2 border rounded text-sm sm:text-base"
+        >
+          <option value="">Select a playlist</option>
+        </select>
+        <ul
+          id="songList"
+          class="list-disc pl-5 text-sm sm:text-base max-h-96 overflow-auto"
+        ></ul>
+      </div>
+      <div class="mt-4 flex justify-center items-center space-x-2 sm:space-x-4">
+        <button
+          id="shuffleBtn"
+          class="bg-purple-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-sm sm:text-base"
+        >
+          Shuffle: Off
+        </button>
+        <button
+          id="repeatBtn"
+          class="bg-yellow-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded text-sm sm:text-base"
+        >
+          Repeat: Off
+        </button>
+      </div>
     </div>
 
     <script>
-        const fqdn = '##fqdn##';
-        const path = '##path##';
-        let originalPlaylist = [];
-        let currentPlaylist = [];
-        let currentIndex = 0;
-        let isPlaying = false;
-        let isShuffled = false;
-        let repeatMode = 'off'; // 'off', 'one', 'all'
-        let sound;
+      const fqdn = "##fqdn##";
+      const path = "##path##";
+      let originalPlaylist = [];
+      let currentPlaylist = [];
+      let currentIndex = 0;
+      let isPlaying = false;
+      let isShuffled = false;
+      let repeatMode = "off"; // 'off', 'one', 'all'
+      let sound;
 
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const shuffleBtn = document.getElementById('shuffleBtn');
-        const repeatBtn = document.getElementById('repeatBtn');
-        const playlistSelect = document.getElementById('playlistSelect');
-        const songList = document.getElementById('songList');
-        const nowPlaying = document.getElementById('nowPlaying');
+      const playPauseBtn = document.getElementById("playPauseBtn");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const shuffleBtn = document.getElementById("shuffleBtn");
+      const repeatBtn = document.getElementById("repeatBtn");
+      const playlistSelect = document.getElementById("playlistSelect");
+      const songList = document.getElementById("songList");
+      const nowPlaying = document.getElementById("nowPlaying");
 
-        function loadPlaylists() {
-            fetch(`https://${fqdn}/${path}/playlists.json`)
-                .then(response => response.json())
-                .then(playlists => {
-                    playlists.forEach(playlist => {
-                        const option = document.createElement('option');
-                        option.value = playlist;
-                        option.textContent = playlist;
-                        playlistSelect.appendChild(option);
-                    });
-                });
-        }
-
-        function loadPlaylist(playlistName) {
-            fetch(`https://${fqdn}/${path}/${playlistName}.json`)
-                .then(response => response.json())
-                .then(songs => {
-                    originalPlaylist = [...songs];
-                    currentPlaylist = [...songs];
-                    if (isShuffled) {
-                        shufflePlaylist();
-                    } else {
-                        displayPlaylist();
-                    }
-                    currentIndex = 0;
-                    loadSong();
-                });
-        }
-
-        function displayPlaylist() {
-            songList.innerHTML = '';
-            currentPlaylist.forEach((song, index) => {
-                const li = document.createElement('li');
-                li.textContent = song;
-                li.classList.add('cursor-pointer', 'hover:text-blue-500', 'text-xl', 'mb-3');
-                li.addEventListener('click', () => {
-                    currentIndex = index;
-                    loadSong();
-                    playSong();
-                });
-                songList.appendChild(li);
+      function loadPlaylists() {
+        fetch(`https://${fqdn}/${path}/playlists.json`)
+          .then((response) => response.json())
+          .then((playlists) => {
+            playlists.forEach((playlist) => {
+              const option = document.createElement("option");
+              option.value = playlist;
+              option.textContent = playlist;
+              playlistSelect.appendChild(option);
             });
-        }
+          });
+      }
 
-        function loadSong() {
-            if (sound) {
-                sound.unload();
-            }
-            const song = currentPlaylist[currentIndex];
-            sound = new Howl({
-                src: [`https://${fqdn}/${path}/${song}.mp3`],
-                html5: true,
-                onend: () => {
-                    if (repeatMode === 'one') {
-                        sound.play();
-                    } else {
-                        nextSong();
-                    }              
-                },
-                onplay: () => {
-                    updateMediaSession();
-                },
-                onpause: () => {
-                    navigator.mediaSession.playbackState = "paused";
-                },
-                onstop: () => {
-                    navigator.mediaSession.playbackState = "paused";
-                }
-            });
-            nowPlaying.textContent = `Now Playing: ${song}`;
-            updateMediaSession();
-        }
-
-        function playSong() {
-            if (!sound) {
-                loadSong();
-            }
-            sound.play();
-            isPlaying = true;
-            playPauseBtn.textContent = 'Pause';
-            navigator.mediaSession.playbackState = "playing";
-        }
-
-        function pauseSong() {
-            sound.pause();
-            isPlaying = false;
-            playPauseBtn.textContent = 'Play';
-            navigator.mediaSession.playbackState = "paused";
-        }
-
-        function nextSong() {
-            currentIndex = (currentIndex + 1) % currentPlaylist.length;
-            loadSong();
-            if (isPlaying) playSong();
-        }
-
-        function prevSong() {
-            currentIndex = (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
-            loadSong();
-            if (isPlaying) playSong();
-        }
-
-        function shufflePlaylist() {
-            isShuffled = !isShuffled;
+      function loadPlaylist(playlistName) {
+        fetch(`https://${fqdn}/${path}/${playlistName}.json`)
+          .then((response) => response.json())
+          .then((songs) => {
+            originalPlaylist = [...songs];
+            currentPlaylist = [...songs];
             if (isShuffled) {
-                shuffleBtn.textContent = 'Shuffle: On';
-                shuffleBtn.classList.add('bg-indigo-700');
-                shuffleBtn.classList.remove('bg-purple-500');
-                currentPlaylist = [...originalPlaylist];
-                for (let i = currentPlaylist.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [currentPlaylist[i], currentPlaylist[j]] = [currentPlaylist[j], currentPlaylist[i]];
-                }
+              shufflePlaylist();
             } else {
-                shuffleBtn.textContent = 'Shuffle: Off';
-                shuffleBtn.classList.add('bg-purple-500');
-                shuffleBtn.classList.remove('bg-indigo-700');
-                currentPlaylist = [...originalPlaylist];
+              displayPlaylist();
             }
-            displayPlaylist();
-            // Update currentIndex to match the position of the current song in the new playlist order
-            if (sound) {
-                const currentSong = sound._src;
-                currentIndex = currentPlaylist.findIndex(song => `https://${fqdn}/${path}/${song}.mp3` === currentSong);
-                if (currentIndex === -1) currentIndex = 0;
-            }
-        }
+            currentIndex = 0;
+            loadSong();
+          });
+      }
 
-        function toggleRepeat() {
-            switch (repeatMode) {
-                case 'off':
-                    repeatMode = 'one';
-                    repeatBtn.textContent = 'Repeat: One';
-                    break;
-                case 'one':
-                    repeatMode = 'all';
-                    repeatBtn.textContent = 'Repeat: All';
-                    break;
-                case 'all':
-                    repeatMode = 'off';
-                    repeatBtn.textContent = 'Repeat: Off';
-                    break;
-            }
-        }
-
-        function updateMediaSession() {
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: currentPlaylist[currentIndex],
-                    artist: 'Unknown Artist',
-                    album: 'Unknown Album',
-                    //artwork: [
-                      //  { src: '/api/placeholder/96/96', sizes: '96x96', type: 'image/png' },
-                      //  { src: '/api/placeholder/128/128', sizes: '128x128', type: 'image/png' },
-                      //  { src: '/api/placeholder/192/192', sizes: '192x192', type: 'image/png' },
-                      //  { src: '/api/placeholder/256/256', sizes: '256x256', type: 'image/png' },
-                      //  { src: '/api/placeholder/384/384', sizes: '384x384', type: 'image/png' },
-                      //  { src: '/api/placeholder/512/512', sizes: '512x512', type: 'image/png' },
-                    //]
-                });
-
-                navigator.mediaSession.setActionHandler('play', playSong);
-                navigator.mediaSession.setActionHandler('pause', pauseSong);
-                navigator.mediaSession.setActionHandler('previoustrack', prevSong);
-                navigator.mediaSession.setActionHandler('nexttrack', nextSong);
-            }
-        }
-
-        playPauseBtn.addEventListener('click', () => isPlaying ? pauseSong() : playSong());
-        prevBtn.addEventListener('click', prevSong);
-        nextBtn.addEventListener('click', nextSong);
-        shuffleBtn.addEventListener('click', shufflePlaylist);
-        repeatBtn.addEventListener('click', toggleRepeat);
-
-        playlistSelect.addEventListener('change', (e) => {
-            if (e.target.value) {
-                loadPlaylist(e.target.value);
-            }
+      function displayPlaylist() {
+        songList.innerHTML = "";
+        currentPlaylist.forEach((song, index) => {
+          const li = document.createElement("li");
+          li.textContent = song;
+          li.classList.add(
+            "cursor-pointer",
+            "hover:text-blue-500",
+            "text-xl",
+            "mb-3"
+          );
+          li.addEventListener("click", () => {
+            currentIndex = index;
+            loadSong();
+            playSong();
+          });
+          songList.appendChild(li);
         });
+      }
 
-        loadPlaylists();
+      function loadSong() {
+        if (sound) {
+          sound.unload();
+        }
+        const song = currentPlaylist[currentIndex];
+        try {
+          sound = new Howl({
+            src: [`https://${fqdn}/${path}/${song}.mp3`],
+            html5: true,
+            onend: () => {
+              if (repeatMode === "one") {
+                sound.play();
+              } else {
+                nextSong();
+              }
+            },
+            onplay: () => {
+              updateMediaSession();
+            },
+            onpause: () => {
+              navigator.mediaSession.playbackState = "paused";
+            },
+            onstop: () => {
+              navigator.mediaSession.playbackState = "paused";
+            },
+          });
+        } catch (ex) {
+          console.log(ex, "Err");
+        }
+        nowPlaying.textContent = `Now Playing: ${song}`;
+        updateMediaSession();
+      }
+
+      function playSong() {
+        if (!sound) {
+          loadSong();
+        }
+        sound.play();
+        isPlaying = true;
+        playPauseBtn.textContent = "Pause";
+        navigator.mediaSession.playbackState = "playing";
+      }
+
+      function pauseSong() {
+        sound.pause();
+        isPlaying = false;
+        playPauseBtn.textContent = "Play";
+        navigator.mediaSession.playbackState = "paused";
+      }
+
+      function nextSong() {
+        currentIndex = (currentIndex + 1) % currentPlaylist.length;
+        loadSong();
+        if (isPlaying) playSong();
+      }
+
+      function prevSong() {
+        currentIndex =
+          (currentIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
+        loadSong();
+        if (isPlaying) playSong();
+      }
+
+      function shufflePlaylist() {
+        isShuffled = !isShuffled;
+        if (isShuffled) {
+          shuffleBtn.textContent = "Shuffle: On";
+          shuffleBtn.classList.add("bg-indigo-700");
+          shuffleBtn.classList.remove("bg-purple-500");
+          currentPlaylist = [...originalPlaylist];
+          for (let i = currentPlaylist.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [currentPlaylist[i], currentPlaylist[j]] = [
+              currentPlaylist[j],
+              currentPlaylist[i],
+            ];
+          }
+        } else {
+          shuffleBtn.textContent = "Shuffle: Off";
+          shuffleBtn.classList.add("bg-purple-500");
+          shuffleBtn.classList.remove("bg-indigo-700");
+          currentPlaylist = [...originalPlaylist];
+        }
+        displayPlaylist();
+        // Update currentIndex to match the position of the current song in the new playlist order
+        if (sound) {
+          const currentSong = sound._src;
+          currentIndex = currentPlaylist.findIndex(
+            (song) => `https://${fqdn}/${path}/${song}.mp3` === currentSong
+          );
+          if (currentIndex === -1) currentIndex = 0;
+        }
+      }
+
+      function toggleRepeat() {
+        switch (repeatMode) {
+          case "off":
+            repeatMode = "one";
+            repeatBtn.textContent = "Repeat: One";
+            break;
+          case "one":
+            repeatMode = "all";
+            repeatBtn.textContent = "Repeat: All";
+            break;
+          case "all":
+            repeatMode = "off";
+            repeatBtn.textContent = "Repeat: Off";
+            break;
+        }
+      }
+
+      function updateMediaSession() {
+        if ("mediaSession" in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: currentPlaylist[currentIndex],
+            artist: "Unknown Artist",
+            album: "Unknown Album",
+            //artwork: [
+            //  { src: '/api/placeholder/96/96', sizes: '96x96', type: 'image/png' },
+            //  { src: '/api/placeholder/128/128', sizes: '128x128', type: 'image/png' },
+            //  { src: '/api/placeholder/192/192', sizes: '192x192', type: 'image/png' },
+            //  { src: '/api/placeholder/256/256', sizes: '256x256', type: 'image/png' },
+            //  { src: '/api/placeholder/384/384', sizes: '384x384', type: 'image/png' },
+            //  { src: '/api/placeholder/512/512', sizes: '512x512', type: 'image/png' },
+            //]
+          });
+
+          navigator.mediaSession.setActionHandler("play", playSong);
+          navigator.mediaSession.setActionHandler("pause", pauseSong);
+          navigator.mediaSession.setActionHandler("previoustrack", prevSong);
+          navigator.mediaSession.setActionHandler("nexttrack", nextSong);
+        }
+      }
+
+      playPauseBtn.addEventListener("click", () =>
+        isPlaying ? pauseSong() : playSong()
+      );
+      prevBtn.addEventListener("click", prevSong);
+      nextBtn.addEventListener("click", nextSong);
+      shuffleBtn.addEventListener("click", shufflePlaylist);
+      repeatBtn.addEventListener("click", toggleRepeat);
+
+      playlistSelect.addEventListener("change", (e) => {
+        if (e.target.value) {
+          loadPlaylist(e.target.value);
+        }
+      });
+
+      loadPlaylists();
     </script>
-</body>
+  </body>
 </html>
