@@ -1,5 +1,5 @@
 // Service Worker for Audio Player
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 const MEDIA_CACHE_NAME = `music-player-media-v${VERSION}`;
 const STATIC_CACHE_NAME = `music-player-static-v${VERSION}`;
 
@@ -27,6 +27,7 @@ self.addEventListener("install", (event) => {
             `/${BASE_PATH}/playlist.html`,
             `/${BASE_PATH}/tailwind.css`,
             `/${BASE_PATH}/howler.min.js`,
+            `/${BASE_PATH}/playlists.json`,
           ])
           .catch((err) => {
             console.log("Cacheing inital assets failed");
