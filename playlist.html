@@ -287,7 +287,9 @@
               displayPlaylist();
             }
             currentIndex = 0;
-            sound && pauseSong();
+            if (sound !== undefined) {
+              pauseSong();
+            }
             loadSong();
             hideLoading();
           });
