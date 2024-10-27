@@ -205,6 +205,11 @@
       }
 
       //#region Song timing
+      const progressBar = document.getElementById("progressBar");
+      const currentTimeDisplay = document.getElementById("currentTime");
+      const totalTimeDisplay = document.getElementById("totalTime");
+      let progressInterval;
+
       function formatTime(seconds) {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
