@@ -18,6 +18,8 @@ const INITIAL_CACHED_RESOURCES = [
 
 // Install event remains the same
 self.addEventListener("install", (event) => {
+  console.log("Service worker installing");
+
   event.waitUntil(
     Promise.all([
       caches.open(CACHE_NAME).then((cache) => {
