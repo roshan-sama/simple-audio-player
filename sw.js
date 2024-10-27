@@ -16,8 +16,8 @@ self.addEventListener("install", (event) => {
       caches.open(STATIC_CACHE_NAME).then((cache) => {
         return cache.addAll([
           `/${BASE_PATH}/playlist.html`,
-          "https://cdn.tailwindcss.com",
-          "https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js",
+          // "https://cdn.tailwindcss.com",
+          // "https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js",
         ]);
       }),
     ])
