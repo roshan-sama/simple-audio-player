@@ -205,17 +205,22 @@
       const errorCloseBtn = document.getElementById("errorCloseBtn");
 
       //#region Service Worker / Offline mode
-      if ("serviceWorker" in navigator) {
+      if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker
-            .register("/sw.js")
+            .register("./sw.js")
             .then((registration) => {
-              console.log("ServiceWorker registration successful");
+              console.log(
+                "ServiceWorker registration successful:",
+                registration
+              );
             })
             .catch((error) => {
               console.error("ServiceWorker registration failed:", error);
             });
         });
+      } else {
+        console.log("Service Workers are not supported in this browser");
       }
 
       const offlineIndicator = document.getElementById("offlineIndicator");
