@@ -10,26 +10,30 @@ self.addEventListener("install", (event) => {
   console.log("Service Worker installing.");
 
   // Cache the essential files
-  event.waitUntil(
-    Promise.all([
-      self.skipWaiting(),
-      caches.open(STATIC_CACHE_NAME).then((cache) => {
-        return cache.add("/static/music/playlist.html");
-      }),
-    ])
-  );
   // event.waitUntil(
   //   Promise.all([
   //     self.skipWaiting(),
   //     caches.open(STATIC_CACHE_NAME).then((cache) => {
-  //       return cache.addAll([
-  //         `/${BASE_PATH}/playlist.html`,
-  //         `/${BASE_PATH}/tailwindcss.css`,
-  //         `/${BASE_PATH}/howler.min.js`,
-  //       ]);
+  //       return cache.addAll(["/static/music/playlist.html"]);
   //     }),
   //   ])
   // );
+  event.waitUntil(
+    Promise.all([
+      self.skipWaiting(),
+      caches.open(STATIC_CACHE_NAME).then((cache) => {
+        return cache
+          .addAll([
+            `/${BASE_PATH}/playlist.html`,
+            `/${BASE_PATH}/tailwind.css`,
+            `/${BASE_PATH}/howler.min.js`,
+          ])
+          .catch((err) => {
+            console.log("Cacheing inital assets failed");
+          });
+      }),
+    ])
+  );
 });
 
 self.addEventListener("activate", (event) => {
