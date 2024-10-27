@@ -31,6 +31,33 @@
         Audio Player
       </h1>
       <div id="player" class="mb-4">
+        <!-- Loading indicator -->
+        <div id="loadingIndicator" class="hidden">
+          <div class="flex justify-center items-center space-x-2 mb-2">
+            <svg
+              class="animate-spin h-5 w-5 text-blue-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span class="text-sm text-gray-600">Loading...</span>
+          </div>
+        </div>
+
         <div id="nowPlaying" class="text-center mb-2 font-semibold"></div>
         <div class="flex justify-center items-center space-x-4">
           <button id="prevBtn" class="bg-blue-500 text-white px-4 py-2 rounded">
@@ -116,6 +143,14 @@
         errorContainer.classList.add("hidden");
       }
 
+      function showLoading() {
+        loadingIndicator.classList.remove("hidden");
+      }
+
+      function hideLoading() {
+        loadingIndicator.classList.add("hidden");
+      }
+
       function loadPlaylists() {
         fetch(`https://${fqdn}/${path}/playlists.json`)
           .then((response) => response.json())
@@ -158,16 +193,23 @@
             "text-xl",
             "mb-3"
           );
-          li.addEventListener("click", () => {
+          li.addEventListener("click", async () => {
+            showLoading();
             currentIndex = index;
             loadSong();
-            playSong();
+            try {
+              await playSong();
+            } catch (error) {
+              hideLoading();
+              showError(`Failed to play song: ${error.message}`);
+            }
           });
           songList.appendChild(li);
         });
       }
 
       function loadSong() {
+        showLoading();
         if (sound) {
           sound.unload();
         }
@@ -176,7 +218,13 @@
           sound = new Howl({
             src: [`https://${fqdn}/${path}/${song}.mp3`],
             html5: true,
+            onload: () => {
+              // Wait for play to complete
+              nowPlaying.textContent = `Now Playing: ${song}`;
+              updateMediaSession();
+            },
             onloaderror: (soundId, error) => {
+              hideLoading();
               console.error("Audio loading error:", error);
               showError(
                 `Failed to load "${song}". Please check your connection and try again.`
@@ -202,6 +250,7 @@
               }
             },
             onplay: () => {
+              hideLoading();
               updateMediaSession();
             },
             onpause: () => {
@@ -214,22 +263,29 @@
         } catch (ex) {
           console.log(ex, "Err");
         }
-        nowPlaying.textContent = `Now Playing: ${song}`;
-        updateMediaSession();
       }
 
       function playSong() {
-        if (!sound) {
-          loadSong();
-        }
-        try {
-          sound.play();
-          isPlaying = true;
-          playPauseBtn.textContent = "Pause";
-          navigator.mediaSession.playbackState = "playing";
-        } catch (error) {
-          showError(`Failed to play song: ${error.message}`);
-        }
+        return new Promise((resolve, reject) => {
+          if (!sound) {
+            loadSong();
+          }
+
+          try {
+            sound.once("play", () => {
+              resolve();
+            });
+
+            sound.play();
+            isPlaying = true;
+            playPauseBtn.textContent = "Pause";
+            navigator.mediaSession.playbackState = "playing";
+            // ... rest of the function
+          } catch (error) {
+            showError(`Failed to play song: ${error.message}`);
+            reject(error);
+          }
+        });
       }
 
       function pauseSong() {
@@ -323,9 +379,20 @@
         }
       }
 
-      playPauseBtn.addEventListener("click", () =>
-        isPlaying ? pauseSong() : playSong()
-      );
+      playPauseBtn.addEventListener("click", async () => {
+        if (isPlaying) {
+          pauseSong();
+        } else {
+          showLoading();
+          try {
+            await playSong();
+          } catch (error) {
+            hideLoading();
+            showError(`Failed to play song: ${error.message}`);
+          }
+        }
+      });
+
       prevBtn.addEventListener("click", prevSong);
       nextBtn.addEventListener("click", nextSong);
       shuffleBtn.addEventListener("click", shufflePlaylist);
