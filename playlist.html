@@ -417,6 +417,7 @@
       }
 
       function pauseSong() {
+        console.log(sound, "snd");
         sound && sound.pause();
         isPlaying = false;
         playPauseBtn.textContent = "▶️";
