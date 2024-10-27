@@ -1,7 +1,7 @@
 // Service Worker for Audio Player
 console.log("Service worker initiating");
 
-const VERSION = "1.0.1";
+const VERSION = "1";
 const CACHE_NAME = `audio-player-cache-v${VERSION}`;
 const MEDIA_CACHE_NAME = `audio-player-media-cache-v${VERSION}`;
 

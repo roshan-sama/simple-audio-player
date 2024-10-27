@@ -214,6 +214,11 @@
                 "ServiceWorker registration successful:",
                 registration
               );
+              console.log(
+                registration.addEventListener("updatefound", () => {
+                  console.log("a");
+                })
+              );
             })
             .catch((error) => {
               console.error("ServiceWorker registration failed:", error);
