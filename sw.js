@@ -14,14 +14,22 @@ self.addEventListener("install", (event) => {
     Promise.all([
       self.skipWaiting(),
       caches.open(STATIC_CACHE_NAME).then((cache) => {
-        return cache.addAll([
-          `/${BASE_PATH}/playlist.html`,
-          `/${BASE_PATH}/tailwindcss.css`,
-          `/${BASE_PATH}/howler.min.js`,
-        ]);
+        return cache.add("/static/music/playlist.html");
       }),
     ])
   );
+  // event.waitUntil(
+  //   Promise.all([
+  //     self.skipWaiting(),
+  //     caches.open(STATIC_CACHE_NAME).then((cache) => {
+  //       return cache.addAll([
+  //         `/${BASE_PATH}/playlist.html`,
+  //         `/${BASE_PATH}/tailwindcss.css`,
+  //         `/${BASE_PATH}/howler.min.js`,
+  //       ]);
+  //     }),
+  //   ])
+  // );
 });
 
 self.addEventListener("activate", (event) => {
