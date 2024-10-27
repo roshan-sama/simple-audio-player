@@ -4,7 +4,7 @@ const MEDIA_CACHE_NAME = `music-player-media-v${VERSION}`;
 const STATIC_CACHE_NAME = `music-player-static-v${VERSION}`;
 
 // Base path for the player
-const BASE_PATH = "/##path##/";
+const BASE_PATH = "##path##";
 
 self.addEventListener("install", (event) => {
   console.log("Service Worker installing.");
@@ -16,8 +16,8 @@ self.addEventListener("install", (event) => {
       caches.open(STATIC_CACHE_NAME).then((cache) => {
         return cache.addAll([
           `/${BASE_PATH}/playlist.html`,
-          // "https://cdn.tailwindcss.com",
-          // "https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js",
+          `/${BASE_PATH}/tailwindcss.css`,
+          `/${BASE_PATH}/howler.min.js`,
         ]);
       }),
     ])
