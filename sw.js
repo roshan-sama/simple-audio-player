@@ -13,18 +13,14 @@ const INITIAL_RESOURCES = [
   "https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js",
 ];
 
+const addResourcesToCache = async (resources) => {
+  const cache = await caches.open(VERSION);
+  await cache.addAll(resources);
+};
+
 // Installation
 self.addEventListener("install", (event) => {
-  console.log("install");
-  event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then((cache) => {
-        console.log("Caching initial resources");
-        return cache.addAll(INITIAL_RESOURCES);
-      })
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(addResourcesToCache(INITIAL_RESOURCES));
 });
 
 // Activation
