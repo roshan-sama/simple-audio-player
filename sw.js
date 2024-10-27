@@ -123,7 +123,7 @@ self.addEventListener("fetch", (event) => {
               const responseToCache = networkResponse.clone();
               caches.open(STATIC_CACHE_NAME).then((cache) => {
                 console.log("Updating cache:", url.pathname);
-                cache.put(event.request, responseToCache);
+                return cache.put(event.request, responseToCache);
               });
             }
             return networkResponse;
