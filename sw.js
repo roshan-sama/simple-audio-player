@@ -120,9 +120,10 @@ self.addEventListener("fetch", (event) => {
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {
               // Update cache with new version
+              const responseToCache = networkResponse.clone();
               caches.open(STATIC_CACHE_NAME).then((cache) => {
                 console.log("Updating cache:", url.pathname);
-                cache.put(event.request, networkResponse.clone());
+                cache.put(event.request, responseToCache);
               });
             }
             return networkResponse;
