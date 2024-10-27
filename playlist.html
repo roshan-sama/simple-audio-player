@@ -6,6 +6,34 @@
     <title>Audio Player</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <style>
+      .progress-bar {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        width: 100%;
+        background: #e5e7eb;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      .progress-bar::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        background: #3b82f6;
+        border-radius: 50%;
+        cursor: pointer;
+      }
+      .progress-bar::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        background: #3b82f6;
+        border-radius: 50%;
+        cursor: pointer;
+        border: none;
+      }
+    </style>
   </head>
   <body class="bg-gray-100 min-h-screen flex items-start justify-center p-4">
     <!-- Error message container -->
@@ -62,7 +90,11 @@
         Audio Player
       </h1>
       <div id="player" class="mb-4">
-        <div id="nowPlaying" class="text-center mb-2 font-semibold"></div>
+        <div
+          id="nowPlaying"
+          class="text-center mb-2 font-semibold text-xl"
+        ></div>
+
         <div class="flex justify-center items-center space-x-8">
           <button id="prevBtn" class="text-white py-2 rounded text-4xl">
             ⏮️
@@ -77,6 +109,22 @@
           <button id="nextBtn" class="text-white py-2 rounded text-4xl">
             ⏭️
           </button>
+        </div>
+
+        <div class="mb-4">
+          <div class="flex justify-between text-sm text-gray-600 mb-1">
+            <span id="currentTime">0:00</span>
+            <span id="totalTime">0:00</span>
+          </div>
+          <input
+            type="range"
+            id="progressBar"
+            class="progress-bar"
+            value="0"
+            step="0.1"
+            min="0"
+            max="100"
+          />
         </div>
       </div>
       <div id="playlist" class="mt-4">
@@ -156,6 +204,58 @@
         loadingIndicator.classList.add("hidden");
       }
 
+      //#region Song timing
+      function formatTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = Math.floor(seconds % 60);
+        return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+      }
+
+      function updateProgress() {
+        if (sound && sound.playing()) {
+          const seek = sound.seek();
+          const duration = sound.duration();
+
+          if (typeof seek === "number" && typeof duration === "number") {
+            const progress = (seek / duration) * 100;
+            progressBar.value = progress;
+            currentTimeDisplay.textContent = formatTime(seek);
+            totalTimeDisplay.textContent = formatTime(duration);
+          }
+        }
+      }
+
+      function startProgressUpdate() {
+        if (progressInterval) {
+          clearInterval(progressInterval);
+        }
+        progressInterval = setInterval(updateProgress, 100);
+      }
+
+      function stopProgressUpdate() {
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          progressInterval = null;
+        }
+      }
+      progressBar.addEventListener("input", function () {
+        if (sound) {
+          const duration = sound.duration();
+          const seekTime = (progressBar.value / 100) * duration;
+          currentTimeDisplay.textContent = formatTime(seekTime);
+        }
+      });
+
+      progressBar.addEventListener("change", function () {
+        if (sound) {
+          const duration = sound.duration();
+          const seekTime = (progressBar.value / 100) * duration;
+          sound.seek(seekTime);
+          updateProgress();
+        }
+      });
+      //#endregion
+
       function loadPlaylists() {
         fetch(`https://${fqdn}/${path}/playlists.json`)
           .then((response) => response.json())
@@ -226,8 +326,12 @@
             html5: true,
             onload: () => {
               // Wait for play to complete
-              nowPlaying.textContent = `Now Playing: ${song}`;
+              nowPlaying.textContent = `${song}`;
               updateMediaSession();
+              // Initialize time displays
+              totalTimeDisplay.textContent = formatTime(sound.duration());
+              currentTimeDisplay.textContent = "0:00";
+              progressBar.value = 0;
             },
             onloaderror: (soundId, error) => {
               hideLoading();
@@ -258,12 +362,21 @@
             onplay: () => {
               hideLoading();
               updateMediaSession();
+              startProgressUpdate();
             },
             onpause: () => {
               navigator.mediaSession.playbackState = "paused";
+              stopProgressUpdate();
             },
             onstop: () => {
               navigator.mediaSession.playbackState = "paused";
+              stopProgressUpdate();
+              // Reset progress
+              progressBar.value = 0;
+              currentTimeDisplay.textContent = "0:00";
+            },
+            onseek: () => {
+              updateProgress();
             },
           });
         } catch (ex) {
