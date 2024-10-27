@@ -24,6 +24,37 @@
         </button>
       </div>
     </div>
+
+    <!-- Loading indicator -->
+    <div
+      id="loadingIndicator"
+      class="bg-gray-300 fixed top-0 left-0 right-0 z-55 hidden"
+    >
+      <div class="flex justify-center items-center space-x-2 mb-2">
+        <svg
+          class="animate-spin h-5 w-5 text-blue-500"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <span class="text-sm text-gray-600">Loading...</span>
+      </div>
+    </div>
+
     <div
       class="bg-white p-4 mt-4 sm:p-8 rounded-lg shadow-md w-full max-w-md sm:max-w-lg md:max-w-xl"
     >
@@ -31,46 +62,26 @@
         Audio Player
       </h1>
       <div id="player" class="mb-4">
-        <!-- Loading indicator -->
-        <div id="loadingIndicator" class="hidden">
-          <div class="flex justify-center items-center space-x-2 mb-2">
-            <svg
-              class="animate-spin h-5 w-5 text-blue-500"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <span class="text-sm text-gray-600">Loading...</span>
-          </div>
-        </div>
-
         <div id="nowPlaying" class="text-center mb-2 font-semibold"></div>
-        <div class="flex justify-center items-center space-x-4">
-          <button id="prevBtn" class="bg-blue-500 text-white px-4 py-2 rounded">
-            Prev
+        <div class="flex justify-center items-center space-x-8">
+          <button
+            id="prevBtn"
+            class="text-white py-2 rounded text-2xl sm:text-4xl"
+          >
+            ⏮️
           </button>
           <button
             id="playPauseBtn"
-            class="bg-green-500 text-white px-4 py-2 rounded"
+            class="text-white p-2 rounded text-2xl sm:text-6xl"
+            aria-label="Play Song"
           >
-            Play
+            ▶️
           </button>
-          <button id="nextBtn" class="bg-blue-500 text-white px-4 py-2 rounded">
-            Next
+          <button
+            id="nextBtn"
+            class="text-white py-2 rounded text-2xl sm:text-4xl"
+          >
+            ⏭️
           </button>
         </div>
       </div>
@@ -177,7 +188,6 @@
             }
             currentIndex = 0;
             loadSong();
-            console.log("hsding");
             hideLoading();
           });
       }
@@ -280,7 +290,7 @@
 
             sound.play();
             isPlaying = true;
-            playPauseBtn.textContent = "Pause";
+            playPauseBtn.textContent = "⏸️";
             navigator.mediaSession.playbackState = "playing";
             // ... rest of the function
           } catch (error) {
@@ -293,7 +303,7 @@
       function pauseSong() {
         sound.pause();
         isPlaying = false;
-        playPauseBtn.textContent = "Play";
+        playPauseBtn.textContent = "▶️";
         navigator.mediaSession.playbackState = "paused";
       }
 
