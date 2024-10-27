@@ -79,7 +79,7 @@
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           ></path>
         </svg>
-        <span class="text-sm text-gray-600">Loading...</span>
+        <span class="text-sm">Loading...</span>
       </div>
     </div>
 
@@ -208,7 +208,6 @@
       const progressBar = document.querySelector("#progressBar");
       const currentTimeDisplay = document.querySelector("#currentTime");
       const totalTimeDisplay = document.querySelector("#totalTime");
-      console.log(totalTimeDisplay, "ttd");
 
       let progressInterval;
 
@@ -363,7 +362,9 @@
               if (repeatMode === "one") {
                 sound.play();
               } else {
-                nextSong();
+                setTimeout(() => {
+                  nextSong();
+                }, 5000);
               }
             },
             onplay: () => {
