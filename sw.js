@@ -79,17 +79,26 @@ self.addEventListener("fetch", (event) => {
         }
 
         console.log("Fetching MP3 from network:", url.pathname);
-        return fetch(event.request).then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200) {
-            return networkResponse;
-          }
+        return fetch(event.request)
+          .then((networkResponse) => {
+            if (!networkResponse || networkResponse.status !== 200) {
+              // Return the error response instead of throwing
+              return networkResponse;
+            }
 
-          return caches.open(MEDIA_CACHE_NAME).then((cache) => {
-            console.log("Caching MP3:", url.pathname);
-            cache.put(event.request, networkResponse.clone());
-            return networkResponse;
+            return caches.open(MEDIA_CACHE_NAME).then((cache) => {
+              console.log("Caching MP3:", url.pathname);
+              cache.put(event.request, networkResponse.clone());
+              return networkResponse;
+            });
+          })
+          .catch((error) => {
+            // Create and return a error response that matches what fetch would return
+            return new Response(null, {
+              status: 404,
+              statusText: "Not Found",
+            });
           });
-        });
       })
     );
     return;
