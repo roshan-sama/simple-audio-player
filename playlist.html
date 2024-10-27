@@ -419,7 +419,7 @@
       }
 
       function pauseSong() {
-        sound.pause();
+        sound && sound.pause();
         isPlaying = false;
         playPauseBtn.textContent = "▶️";
         navigator.mediaSession.playbackState = "paused";
