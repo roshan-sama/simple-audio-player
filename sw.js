@@ -15,6 +15,7 @@ const INITIAL_RESOURCES = [
 
 // Installation
 self.addEventListener("install", (event) => {
+  console.log("install");
   event.waitUntil(
     caches
       .open(CACHE_NAME)
