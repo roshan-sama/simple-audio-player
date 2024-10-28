@@ -64,72 +64,78 @@ self.addEventListener("fetch", (event) => {
 
     event.respondWith(
       (async () => {
-        const rangeHeader = event.request.headers.get("range");
         const cache = await caches.open(MEDIA_CACHE_NAME);
-        const cachedResponse = await cache.match(event.request);
+        const rangeHeader = event.request.headers.get("range");
 
-        // If no range request and we have a cache, return it
-        if (!rangeHeader && cachedResponse) {
-          return cachedResponse;
-        }
+        // First, try to get the full file from cache
+        let cachedResponse = await cache.match(event.request);
 
-        try {
-          // Always fetch from network for range requests or if not cached
-          const networkResponse = await fetch(event.request);
-
-          // Cache the full response if it's not a range request
-          if (!rangeHeader && networkResponse.status === 200) {
-            const clonedResponse = networkResponse.clone();
-            cache.put(event.request, clonedResponse).catch((err) => {
-              console.error("Cache write failed:", err);
+        if (!cachedResponse) {
+          // If not in cache, fetch the full file first
+          try {
+            // Create a new request without range header to get full file
+            const fullFileRequest = new Request(event.request.url, {
+              method: "GET",
+              headers: new Headers({
+                // Add headers that might be needed for your server
+                Accept: "audio/mpeg,audio/*;q=0.9,*/*;q=0.8",
+              }),
             });
-          }
 
-          return networkResponse;
-        } catch (error) {
-          console.error("Fetch failed:", error);
+            const fullFileResponse = await fetch(fullFileRequest);
 
-          // If we have a cached response, try to handle range request
-          if (cachedResponse && rangeHeader) {
-            const ranges = rangeHeader.replace("bytes=", "").split(",");
-            const [rangeStart, rangeEnd] = ranges[0].split("-").map(Number);
-
-            try {
-              const blob = await cachedResponse.blob();
-              const slicedBlob = blob.slice(
-                rangeStart,
-                rangeEnd ? rangeEnd + 1 : undefined,
-                "audio/mpeg"
-              );
-
-              // Create a new response with the correct headers
-              return new Response(slicedBlob, {
-                status: 206,
-                statusText: "Partial Content",
-                headers: {
-                  "Content-Type": "audio/mpeg",
-                  "Content-Range": `bytes ${rangeStart}-${
-                    rangeEnd || blob.size - 1
-                  }/${blob.size}`,
-                  "Content-Length": slicedBlob.size,
-                },
-              });
-            } catch (sliceError) {
-              console.error("Range request handling failed:", sliceError);
+            if (fullFileResponse.status === 200) {
+              console.log("Caching full MP3 file:", url.pathname);
+              // Cache the full file
+              await cache.put(event.request, fullFileResponse.clone());
+              cachedResponse = await cache.match(event.request);
+            } else {
+              // If we can't get the full file, proceed with original request
+              return fetch(event.request);
             }
+          } catch (error) {
+            console.error("Failed to fetch full file:", error);
+            return fetch(event.request);
           }
-
-          // If all else fails, return 404
-          return new Response(null, {
-            status: 404,
-            statusText: "Not Found",
-          });
         }
+
+        // Now handle range request if present
+        if (rangeHeader && cachedResponse) {
+          const ranges = rangeHeader.replace("bytes=", "").split(",");
+          const [rangeStart, rangeEnd] = ranges[0].split("-").map(Number);
+
+          try {
+            const blob = await cachedResponse.blob();
+            const slicedBlob = blob.slice(
+              rangeStart,
+              rangeEnd ? rangeEnd + 1 : undefined,
+              "audio/mpeg"
+            );
+
+            return new Response(slicedBlob, {
+              status: 206,
+              statusText: "Partial Content",
+              headers: {
+                "Content-Type": "audio/mpeg",
+                "Content-Range": `bytes ${rangeStart}-${
+                  rangeEnd || blob.size - 1
+                }/${blob.size}`,
+                "Content-Length": slicedBlob.size,
+                "Accept-Ranges": "bytes",
+              },
+            });
+          } catch (error) {
+            console.error("Failed to handle range request:", error);
+            return fetch(event.request);
+          }
+        }
+
+        // If no range request or we failed to handle it, return full cached response
+        return cachedResponse || fetch(event.request);
       })()
     );
     return;
   }
-
   // Handle playlist.html and JSON files - Stale While Revalidate
   if (
     url.pathname.endsWith("playlist.html") ||
