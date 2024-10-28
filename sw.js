@@ -99,16 +99,25 @@ self.addEventListener("fetch", (event) => {
           }
         }
 
-        // Now handle range request if present
+        // Handle range request if present
         if (rangeHeader && cachedResponse) {
           const ranges = rangeHeader.replace("bytes=", "").split(",");
-          const [rangeStart, rangeEnd] = ranges[0].split("-").map(Number);
+          const [start, end] = ranges[0].split("-").map((value) => {
+            // If value is empty string, return undefined
+            return value === "" ? undefined : Number(value);
+          });
 
           try {
             const blob = await cachedResponse.blob();
+
+            // Handle case where only start is specified (bytes=X-)
+            const rangeStart = start || 0;
+            // If end is undefined, use the full file size
+            const rangeEnd = end !== undefined ? end : blob.size - 1;
+
             const slicedBlob = blob.slice(
               rangeStart,
-              rangeEnd ? rangeEnd + 1 : undefined,
+              rangeEnd + 1,
               "audio/mpeg"
             );
 
@@ -117,10 +126,8 @@ self.addEventListener("fetch", (event) => {
               statusText: "Partial Content",
               headers: {
                 "Content-Type": "audio/mpeg",
-                "Content-Range": `bytes ${rangeStart}-${
-                  rangeEnd || blob.size - 1
-                }/${blob.size}`,
-                "Content-Length": slicedBlob.size,
+                "Content-Range": `bytes ${rangeStart}-${rangeEnd}/${blob.size}`,
+                "Content-Length": String(slicedBlob.size),
                 "Accept-Ranges": "bytes",
               },
             });
@@ -136,6 +143,7 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+
   // Handle playlist.html and JSON files - Stale While Revalidate
   if (
     url.pathname.endsWith("playlist.html") ||
