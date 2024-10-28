@@ -1,5 +1,5 @@
 // Service Worker for Audio Player
-const VERSION = "1.0.3";
+const VERSION = "1.0.4";
 const MEDIA_CACHE_NAME = `music-player-media-v${VERSION}`;
 const STATIC_CACHE_NAME = `music-player-static-v${VERSION}`;
 
