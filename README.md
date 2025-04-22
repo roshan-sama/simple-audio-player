@@ -31,6 +31,8 @@ sw.js will attempt to cache your audio locally when you play it. You should be a
 1. Service workers to cache songs on client **DONE**
 2. Time delay between songs **DONE**
 3. Loading indicator to display loading state between when we press play or next and the song begins **DONE**
+4. Numbering system to indicate the current song that is playing, how many songs are in the playlist, and numbering for each song in the list
+5. Source of playlist to be url parameter (##fqdn##?playlistName=<name>)
 
 ## Why host your own purchased songs?
 - Youtube and other subscription sites can take music down for various reasons
