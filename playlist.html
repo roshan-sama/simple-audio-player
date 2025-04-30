@@ -47,6 +47,29 @@
     </style>
   </head>
   <body class="bg-gray-100 min-h-screen flex items-start justify-center p-4">
+    <div class="absolute top-4 right-4">
+      <button id="settingsBtn" class="text-gray-600 hover:text-gray-800">
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          ></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          ></path>
+        </svg>
+      </button>
+    </div>
     <!-- Error message container -->
     <div id="errorContainer" class="fixed top-0 left-0 right-0 z-50 hidden">
       <div
@@ -179,6 +202,39 @@
         </button>
       </div>
     </div>
+    <div
+      id="settingsModal"
+      class="fixed inset-0 bg-black bg-opacity-50 hidden z-50"
+    >
+      <div
+        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-6 max-w-md w-full"
+      >
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Settings</h2>
+          <button
+            id="closeSettingsBtn"
+            class="text-gray-500 hover:text-gray-700"
+          >
+            <span class="text-2xl">&times;</span>
+          </button>
+        </div>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <label class="text-gray-700">Enable Offline Mode</label>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cacheToggle" class="sr-only peer" />
+              <div
+                class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
+              ></div>
+            </label>
+          </div>
+        </div>
+        <div class="mt-6 text-sm text-gray-500">
+          Enabling offline mode will save audio files to your device for offline
+          playback. This may use significant storage space.
+        </div>
+      </div>
+    </div>
 
     <script>
       const fqdn = "##fqdn##";
@@ -203,6 +259,11 @@
       const errorContainer = document.getElementById("errorContainer");
       const errorMessage = document.getElementById("errorMessage");
       const errorCloseBtn = document.getElementById("errorCloseBtn");
+
+      const settingsBtn = document.getElementById("settingsBtn");
+      const settingsModal = document.getElementById("settingsModal");
+      const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+      const cacheToggle = document.getElementById("cacheToggle");
 
       //#region Service Worker / Offline mode
       const registerServiceWorker = async () => {
@@ -234,6 +295,66 @@
           offlineIndicator.style.display = "flex";
         }
       }
+      // Cookie management functions
+      function setCookie(name, value, days) {
+        const expires = new Date();
+        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+        document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+      }
+
+      function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(";");
+        for (let i = 0; i < ca.length; i++) {
+          let c = ca[i];
+          while (c.charAt(0) === " ") c = c.substring(1, c.length);
+          if (c.indexOf(nameEQ) === 0)
+            return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+      }
+
+      // Settings modal handlers
+      settingsBtn.addEventListener("click", () => {
+        settingsModal.classList.remove("hidden");
+        // Load saved preference
+        const cachingEnabled = getCookie("audioCachingEnabled") === "true";
+        cacheToggle.checked = cachingEnabled;
+      });
+
+      closeSettingsBtn.addEventListener("click", () => {
+        settingsModal.classList.add("hidden");
+      });
+
+      // Handle clicking outside modal to close
+      settingsModal.addEventListener("click", (e) => {
+        if (e.target === settingsModal) {
+          settingsModal.classList.add("hidden");
+        }
+      });
+
+      // Handle cache toggle
+      cacheToggle.addEventListener("change", () => {
+        setCookie("audioCachingEnabled", cacheToggle.checked, 365);
+        // Notify service worker of preference change
+        navigator.serviceWorker.controller?.postMessage({
+          type: "CACHE_PREFERENCE_UPDATED",
+          enableCaching: cacheToggle.checked,
+        });
+      });
+
+      // Initialize cache preference on page load
+      window.addEventListener("load", () => {
+        const cachingEnabled = getCookie("audioCachingEnabled") === "true";
+        cacheToggle.checked = cachingEnabled;
+        // Notify service worker of initial preference
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: "CACHE_PREFERENCE_UPDATED",
+            enableCaching: cachingEnabled,
+          });
+        }
+      });
 
       //#endregion
 

@@ -1,10 +1,21 @@
 // Service Worker for Audio Player
-const VERSION = "1.0.4";
+const VERSION = "1.0.5";
 const MEDIA_CACHE_NAME = `music-player-media-v${VERSION}`;
 const STATIC_CACHE_NAME = `music-player-static-v${VERSION}`;
 
 // Base path for the player
 const BASE_PATH = "##path##";
+
+// Cache preference state
+let enableCaching = false;
+
+// Message handler for cache preference updates
+self.addEventListener("message", (event) => {
+  if (event.data.type === "CACHE_PREFERENCE_UPDATED") {
+    enableCaching = event.data.enableCaching;
+    console.log("Cache preference updated:", enableCaching);
+  }
+});
 
 self.addEventListener("install", (event) => {
   console.log("Service Worker installing.");
@@ -20,7 +31,7 @@ self.addEventListener("install", (event) => {
             `/${BASE_PATH}/playlists.json`,
           ])
           .catch((err) => {
-            console.log("Cacheing inital assets failed");
+            console.log("Caching initial assets failed");
           });
       }),
     ])
@@ -29,8 +40,6 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   console.log("Service Worker activating.");
-
-  // Clean up old caches
   event.waitUntil(
     Promise.all([
       self.clients.claim(),
@@ -38,7 +47,6 @@ self.addEventListener("activate", (event) => {
         return Promise.all(
           keys
             .filter((key) => {
-              // Delete old caches from both static and media
               return (
                 key.startsWith("music-player-") &&
                 key !== MEDIA_CACHE_NAME &&
@@ -67,17 +75,17 @@ self.addEventListener("fetch", (event) => {
         const cache = await caches.open(MEDIA_CACHE_NAME);
         const rangeHeader = event.request.headers.get("range");
 
-        // First, try to get the full file from cache
-        let cachedResponse = await cache.match(event.request);
+        // Check cache only if caching is enabled
+        let cachedResponse = enableCaching
+          ? await cache.match(event.request)
+          : null;
 
-        if (!cachedResponse) {
-          // If not in cache, fetch the full file first
+        if (!cachedResponse && enableCaching) {
+          // If not in cache and caching is enabled, fetch and cache the full file
           try {
-            // Create a new request without range header to get full file
             const fullFileRequest = new Request(event.request.url, {
               method: "GET",
               headers: new Headers({
-                // Add headers that might be needed for your server
                 Accept: "audio/mpeg,audio/*;q=0.9,*/*;q=0.8",
               }),
             });
@@ -86,11 +94,9 @@ self.addEventListener("fetch", (event) => {
 
             if (fullFileResponse.status === 200) {
               console.log("Caching full MP3 file:", url.pathname);
-              // Cache the full file
               await cache.put(event.request, fullFileResponse.clone());
               cachedResponse = await cache.match(event.request);
             } else {
-              // If we can't get the full file, proceed with original request
               return fetch(event.request);
             }
           } catch (error) {
@@ -99,20 +105,21 @@ self.addEventListener("fetch", (event) => {
           }
         }
 
+        // If caching is disabled or no cached response, fetch from network
+        if (!enableCaching || !cachedResponse) {
+          return fetch(event.request);
+        }
+
         // Handle range request if present
         if (rangeHeader && cachedResponse) {
           const ranges = rangeHeader.replace("bytes=", "").split(",");
           const [start, end] = ranges[0].split("-").map((value) => {
-            // If value is empty string, return undefined
             return value === "" ? undefined : Number(value);
           });
 
           try {
             const blob = await cachedResponse.blob();
-
-            // Handle case where only start is specified (bytes=X-)
             const rangeStart = start || 0;
-            // If end is undefined, use the full file size
             const rangeEnd = end !== undefined ? end : blob.size - 1;
 
             const slicedBlob = blob.slice(
@@ -137,7 +144,6 @@ self.addEventListener("fetch", (event) => {
           }
         }
 
-        // If no range request or we failed to handle it, return full cached response
         return cachedResponse || fetch(event.request);
       })()
     );
@@ -153,7 +159,6 @@ self.addEventListener("fetch", (event) => {
 
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
-        // Get fresh version from network
         return Promise.resolve()
           .then(() => fetch(event.request))
           .then((networkResponse) => {
